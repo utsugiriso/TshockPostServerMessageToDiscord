@@ -1,0 +1,9 @@
+.idea
+Debug
+Release
+tshock_4.3.24
+*.sln
+*.suo
+*.obj
+obj
+.vs
