@@ -263,8 +263,9 @@ namespace TshockPostServerMessageToDiscord
 
         private async Task<string> PostMessageToDiscordAsync(string message)
         {
+            //Console.WriteLine("start PostMessageToDiscordAsync: {0}", message);
             //return ""; // for debug
-            //Console.WriteLine("start PostMessageToDiscordAsync");
+
             HttpResponseMessage response = await client.PostAsync(Configs.DiscordCreateMessageApiEndpoint, new FormUrlEncodedContent(new Dictionary<string, string> { { "content", message } }));
             string content = await response.Content.ReadAsStringAsync();
             //Console.WriteLine("End PostMessageToDiscordAsync: {0}", content);
