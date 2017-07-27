@@ -105,7 +105,8 @@ namespace TshockPostServerMessageToDiscord
             public const string CHARACTER_NAME_FORMAT = "{character_name}";
             public const string MESSAGE_FORMAT = "{message}";
             public const string CURRENT_PLAYERS_FORMAT = "{current_players}";
-            public string CurrentPlayersMessageFormat = $"{CURRENT_PLAYERS_FORMAT} players now.";
+            public const string SERVER_NAME_FORMAT = "{server_name}";
+            public string CurrentPlayersMessageFormat = $"{CURRENT_PLAYERS_FORMAT} players now on {SERVER_NAME_FORMAT}.";
             public string LoginMessageFormat = $"{CHARACTER_NAME_FORMAT} has joined.";
             public string LogoutMessageFormat = $"{CHARACTER_NAME_FORMAT} has left.";
             public string ChatMessageFormat = $"<{CHARACTER_NAME_FORMAT}> {MESSAGE_FORMAT}";
@@ -173,7 +174,7 @@ namespace TshockPostServerMessageToDiscord
             TSPlayer player = TShock.Players[args.Who];
             if (player == null)
                 return;
-            string message = Configs.LoginMessageFormat.Replace(Config.CHARACTER_NAME_FORMAT, player.Name);
+            string message = Configs.LoginMessageFormat.Replace(Config.CHARACTER_NAME_FORMAT, player.Name).Replace(Config.SERVER_NAME_FORMAT, TShock.Config.ServerName);
 
             List<string> players = TShock.Utils.GetPlayers(false);
             players.Add(player.Name);
@@ -198,7 +199,7 @@ namespace TshockPostServerMessageToDiscord
                 return;
             }
 
-            string message = Configs.LogoutMessageFormat.Replace(Config.CHARACTER_NAME_FORMAT, tsplr.Name);
+            string message = Configs.LogoutMessageFormat.Replace(Config.CHARACTER_NAME_FORMAT, tsplr.Name).Replace(Config.SERVER_NAME_FORMAT, TShock.Config.ServerName);
 
             List<string> players = TShock.Utils.GetPlayers(false);
             players.Remove(tsplr.Name);
