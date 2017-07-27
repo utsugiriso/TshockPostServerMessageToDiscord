@@ -174,11 +174,11 @@ namespace TshockPostServerMessageToDiscord
             TSPlayer player = TShock.Players[args.Who];
             if (player == null)
                 return;
-            string message = Configs.LoginMessageFormat.Replace(Config.CHARACTER_NAME_FORMAT, player.Name).Replace(Config.SERVER_NAME_FORMAT, TShock.Config.ServerName);
+            string message = Configs.LoginMessageFormat.Replace(Config.CHARACTER_NAME_FORMAT, player.Name);
 
             List<string> players = TShock.Utils.GetPlayers(false);
             players.Add(player.Name);
-            string currentPlayersMessage = Configs.CurrentPlayersMessageFormat.Replace(Config.CURRENT_PLAYERS_FORMAT, (TShock.Utils.ActivePlayers() + 1).ToString());
+            string currentPlayersMessage = Configs.CurrentPlayersMessageFormat.Replace(Config.CURRENT_PLAYERS_FORMAT, (TShock.Utils.ActivePlayers() + 1).ToString()).Replace(Config.SERVER_NAME_FORMAT, TShock.Config.ServerName);
             message = $"{message}\n{currentPlayersMessage}\n{String.Join(", ", players.ToArray())}";
 
             //Console.WriteLine("OnServerJoin: {0}", message);
@@ -199,14 +199,14 @@ namespace TshockPostServerMessageToDiscord
                 return;
             }
 
-            string message = Configs.LogoutMessageFormat.Replace(Config.CHARACTER_NAME_FORMAT, tsplr.Name).Replace(Config.SERVER_NAME_FORMAT, TShock.Config.ServerName);
+            string message = Configs.LogoutMessageFormat.Replace(Config.CHARACTER_NAME_FORMAT, tsplr.Name);
 
             List<string> players = TShock.Utils.GetPlayers(false);
             players.Remove(tsplr.Name);
             int activePlayers = TShock.Utils.ActivePlayers();
             if (0 < activePlayers)
                 activePlayers--;
-            string currentPlayersMessage = Configs.CurrentPlayersMessageFormat.Replace(Config.CURRENT_PLAYERS_FORMAT, (activePlayers).ToString());
+            string currentPlayersMessage = Configs.CurrentPlayersMessageFormat.Replace(Config.CURRENT_PLAYERS_FORMAT, (activePlayers).ToString()).Replace(Config.SERVER_NAME_FORMAT, TShock.Config.ServerName);
             message = $"{message}\n{currentPlayersMessage}\n{String.Join(", ", players.ToArray())}";
 
             //Console.WriteLine("OnServerLeave: {0}", message);
@@ -263,6 +263,7 @@ namespace TshockPostServerMessageToDiscord
 
         private async Task<string> PostMessageToDiscordAsync(string message)
         {
+            //return ""; // for debug
             //Console.WriteLine("start PostMessageToDiscordAsync");
             HttpResponseMessage response = await client.PostAsync(Configs.DiscordCreateMessageApiEndpoint, new FormUrlEncodedContent(new Dictionary<string, string> { { "content", message } }));
             string content = await response.Content.ReadAsStringAsync();
