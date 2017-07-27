@@ -235,11 +235,14 @@ namespace TshockPostServerMessageToDiscord
 
             if (player != null && type == PacketTypes.PlayerDeathV2)
             {
+                /*
                 string message = PlayerDeathReason.FromReader(e.Msg.reader).GetDeathText(player.Name).ToString();
                 if (String.IsNullOrEmpty(message))
                 {
                     message = PlayerDeathReason.LegacyDefault().GetDeathText(player.Name).ToString();
                 }
+                */
+                string message = PlayerDeathReason.LegacyDefault().GetDeathText(player.Name).ToString();
                 //Console.WriteLine("OnGetData: {0}", message);
                 PostMessageToDiscord(message);
             }
