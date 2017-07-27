@@ -180,7 +180,7 @@ namespace TshockPostServerMessageToDiscord
             string currentPlayersMessage = Configs.CurrentPlayersMessageFormat.Replace(Config.CURRENT_PLAYERS_FORMAT, (TShock.Utils.ActivePlayers() + 1).ToString());
             message = $"{message}\n{currentPlayersMessage}\n{String.Join(", ", players.ToArray())}";
 
-            Console.WriteLine("OnServerJoin: {0}", message);
+            //Console.WriteLine("OnServerJoin: {0}", message);
             PostMessageToDiscord(message);
         }
 
@@ -193,7 +193,7 @@ namespace TshockPostServerMessageToDiscord
             }
 
             TSPlayer tsplr = TShock.Players[args.Who];
-            if (tsplr == null)
+            if (tsplr == null || String.IsNullOrEmpty(tsplr.Name))
             {
                 return;
             }
@@ -202,10 +202,13 @@ namespace TshockPostServerMessageToDiscord
 
             List<string> players = TShock.Utils.GetPlayers(false);
             players.Remove(tsplr.Name);
-            string currentPlayersMessage = Configs.CurrentPlayersMessageFormat.Replace(Config.CURRENT_PLAYERS_FORMAT, (TShock.Utils.ActivePlayers() - 1).ToString());
+            int activePlayers = TShock.Utils.ActivePlayers();
+            if (0 < activePlayers)
+                activePlayers--;
+            string currentPlayersMessage = Configs.CurrentPlayersMessageFormat.Replace(Config.CURRENT_PLAYERS_FORMAT, (activePlayers).ToString());
             message = $"{message}\n{currentPlayersMessage}\n{String.Join(", ", players.ToArray())}";
 
-            Console.WriteLine("OnServerLeave: {0}", message);
+            //Console.WriteLine("OnServerLeave: {0}", message);
             PostMessageToDiscord(message);
         }
 
@@ -213,14 +216,14 @@ namespace TshockPostServerMessageToDiscord
         private void OnPlayerChat(TShockAPI.Hooks.PlayerChatEventArgs args)
         {
             string message = Configs.ChatMessageFormat.Replace(Config.CHARACTER_NAME_FORMAT, args.Player.Name).Replace(Config.MESSAGE_FORMAT, args.RawText);
-            Console.WriteLine("OnPlayerChat: {0}", message);
+            //Console.WriteLine("OnPlayerChat: {0}", message);
             PostMessageToDiscord(message);
         }
 
         private void OnServerChat(ServerChatEventArgs args)
         {
             string message = args.Text;
-            Console.WriteLine("OnServerChat: {0}", message);
+            //Console.WriteLine("OnServerChat: {0}", message);
             PostMessageToDiscord(message);
         }
 
@@ -236,7 +239,7 @@ namespace TshockPostServerMessageToDiscord
                 {
                     message = PlayerDeathReason.LegacyDefault().GetDeathText(player.Name).ToString();
                 }
-                Console.WriteLine("OnGetData: {0}", message);
+                //Console.WriteLine("OnGetData: {0}", message);
                 PostMessageToDiscord(message);
             }
         }
@@ -244,12 +247,12 @@ namespace TshockPostServerMessageToDiscord
         private static HttpClient client = null;
         private void PostMessageToDiscord(string message)
         {
-            Console.WriteLine("start PostMessageToDiscord");
+            //Console.WriteLine("start PostMessageToDiscord");
             if (!String.IsNullOrEmpty(Configs.DiscordAppToken) && !String.IsNullOrEmpty(Configs.DiscordCannelId))
             {
                 PostMessageToDiscordRunAsync(message).Wait();
             }
-            Console.WriteLine("ends PostMessageToDiscord");
+            //Console.WriteLine("ends PostMessageToDiscord");
         }
 
         private async Task PostMessageToDiscordRunAsync(string message)
@@ -259,10 +262,10 @@ namespace TshockPostServerMessageToDiscord
 
         private async Task<string> PostMessageToDiscordAsync(string message)
         {
-            Console.WriteLine("start PostMessageToDiscordAsync");
+            //Console.WriteLine("start PostMessageToDiscordAsync");
             HttpResponseMessage response = await client.PostAsync(Configs.DiscordCreateMessageApiEndpoint, new FormUrlEncodedContent(new Dictionary<string, string> { { "content", message } }));
             string content = await response.Content.ReadAsStringAsync();
-            Console.WriteLine("End PostMessageToDiscordAsync: {0}", content);
+            //Console.WriteLine("End PostMessageToDiscordAsync: {0}", content);
             return content;
         }
     }
