@@ -11,6 +11,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 
 using System.IO;
+using System.Linq;
 
 namespace TshockPostServerMessageToDiscord
 {
@@ -47,7 +48,7 @@ namespace TshockPostServerMessageToDiscord
         /// </summary>
         public override Version Version
         {
-            get { return new Version(0, 0, 0, 1); }
+            get { return new Version(4, 4, 0, 1); }
         }
 
         /// <summary>
@@ -67,12 +68,6 @@ namespace TshockPostServerMessageToDiscord
         {
             if (Configs == null)
                 Configs = new Config();
-
-            if (client == null)
-            {
-                client = new HttpClient();
-                client.DefaultRequestHeaders.Add("Authorization", Configs.DiscordAppToken);
-            }
 
             ServerApi.Hooks.ServerJoin.Register(this, OnServerJoin);
             ServerApi.Hooks.ServerLeave.Register(this, OnServerLeave);
@@ -102,29 +97,13 @@ namespace TshockPostServerMessageToDiscord
         public static Config Configs = null;
         public class Config
         {
-            public const string CHARACTER_NAME_FORMAT = "{character_name}";
-            public const string MESSAGE_FORMAT = "{message}";
-            public const string CURRENT_PLAYERS_FORMAT = "{current_players}";
-            public const string SERVER_NAME_FORMAT = "{server_name}";
-            public string CurrentPlayersMessageFormat = $"{CURRENT_PLAYERS_FORMAT} players now on {SERVER_NAME_FORMAT}.";
-            public string LoginMessageFormat = $"{CHARACTER_NAME_FORMAT} has joined.";
-            public string LogoutMessageFormat = $"{CHARACTER_NAME_FORMAT} has left.";
-            public string ChatMessageFormat = $"<{CHARACTER_NAME_FORMAT}> {MESSAGE_FORMAT}";
-
-            public string DiscordAppToken = null;
-            public string DiscordCannelId = null;
-            public string DiscordCreateMessageApiEndpoint = null;
+            public const string DUMMY_DISCORD_WEBHOOK_URL = "https://discordapp.com/api/webhooks/hogehugahogehuga/hogehogehugahugehogeahogehuahugeaho";
+            public string DiscordWebHookUrl = null;
 
             public Config()
             {
-                string discordAppTokenPath = Path.Combine(TShock.SavePath, "discord_app_token.txt");
-                DiscordAppToken = Read(discordAppTokenPath, "Bot MTk4NjIyNDgzNDcxOTI1MjQ4.Cl2FMQ.ZnCjm1XVW7vRze4b7Cq4se7kKWs");
-
-                string discordCannelIdPath = Path.Combine(TShock.SavePath, "discord_channel_id.txt");
-                DiscordCannelId = Read(discordCannelIdPath, "199737254929760256");
-
-                DiscordCreateMessageApiEndpoint = $"https://discordapp.com/api/channels/{DiscordCannelId}/messages";
-
+                string discordAppTokenPath = Path.Combine(TShock.SavePath, "discord_webhook_url.txt");
+                DiscordWebHookUrl = Read(discordAppTokenPath, DUMMY_DISCORD_WEBHOOK_URL);
             }
 
             public string Read(string path, string defaultValue)
@@ -169,17 +148,26 @@ namespace TshockPostServerMessageToDiscord
             }
         }
 
+        protected string DecoratePlayerName(string playerName)
+        {
+            return $"{playerName}";
+        }
+
+        protected string CurrentPlayersMessage(List<TSPlayer> players)
+        {
+            return $"{players.Count} players joined {TShock.Config.ServerName}.\n{String.Join(", ", players.Select(player => DecoratePlayerName(player.Name)))}";
+        }
+
         private void OnServerJoin(JoinEventArgs args)
         {
             TSPlayer player = TShock.Players[args.Who];
             if (player == null)
                 return;
-            string message = Configs.LoginMessageFormat.Replace(Config.CHARACTER_NAME_FORMAT, player.Name);
+            string message = $"{DecoratePlayerName(player.Name)} joined.";
 
-            List<string> players = TShock.Utils.GetPlayers(false);
-            players.Add(player.Name);
-            string currentPlayersMessage = Configs.CurrentPlayersMessageFormat.Replace(Config.CURRENT_PLAYERS_FORMAT, (TShock.Utils.ActivePlayers() + 1).ToString()).Replace(Config.SERVER_NAME_FORMAT, TShock.Config.ServerName);
-            message = $"{message}\n{currentPlayersMessage}\n{String.Join(", ", players.ToArray())}";
+            List<TSPlayer> joinedPlayers = TShock.Players.Where(joinedPlayer => joinedPlayer != null).ToList();
+            List<string> joinedPlayerNames = joinedPlayers.Select(joinedPlayer => DecoratePlayerName(joinedPlayer.Name)).ToList();
+            message = $"{message}\n{CurrentPlayersMessage(joinedPlayers)}";
 
             //Console.WriteLine("OnServerJoin: {0}", message);
             PostMessageToDiscord(message);
@@ -199,15 +187,11 @@ namespace TshockPostServerMessageToDiscord
                 return;
             }
 
-            string message = Configs.LogoutMessageFormat.Replace(Config.CHARACTER_NAME_FORMAT, tsplr.Name);
+            string message = $"{DecoratePlayerName(tsplr.Name)} left.";
 
-            List<string> players = TShock.Utils.GetPlayers(false);
-            players.Remove(tsplr.Name);
-            int activePlayers = TShock.Utils.ActivePlayers();
-            if (0 < activePlayers)
-                activePlayers--;
-            string currentPlayersMessage = Configs.CurrentPlayersMessageFormat.Replace(Config.CURRENT_PLAYERS_FORMAT, (activePlayers).ToString()).Replace(Config.SERVER_NAME_FORMAT, TShock.Config.ServerName);
-            message = $"{message}\n{currentPlayersMessage}\n{String.Join(", ", players.ToArray())}";
+            List<TSPlayer> joinedPlayers = TShock.Players.Where(joinedPlayer => joinedPlayer != null).ToList();
+            joinedPlayers.Remove(tsplr);
+            message = $"{message}\n{CurrentPlayersMessage(joinedPlayers)}";
 
             //Console.WriteLine("OnServerLeave: {0}", message);
             PostMessageToDiscord(message);
@@ -216,7 +200,7 @@ namespace TshockPostServerMessageToDiscord
 
         private void OnPlayerChat(TShockAPI.Hooks.PlayerChatEventArgs args)
         {
-            string message = Configs.ChatMessageFormat.Replace(Config.CHARACTER_NAME_FORMAT, args.Player.Name).Replace(Config.MESSAGE_FORMAT, args.RawText);
+            string message = $"{DecoratePlayerName(args.Player.Name)}: {args.RawText}";
             //Console.WriteLine("OnPlayerChat: {0}", message);
             PostMessageToDiscord(message);
         }
@@ -248,11 +232,10 @@ namespace TshockPostServerMessageToDiscord
             }
         }
 
-        private static HttpClient client = null;
         private void PostMessageToDiscord(string message)
         {
             //Console.WriteLine("start PostMessageToDiscord");
-            if (!String.IsNullOrEmpty(Configs.DiscordAppToken) && !String.IsNullOrEmpty(Configs.DiscordCannelId))
+            if (!String.IsNullOrEmpty(Configs.DiscordWebHookUrl))
             {
                 PostMessageToDiscordRunAsync(message).Wait();
             }
@@ -268,8 +251,8 @@ namespace TshockPostServerMessageToDiscord
         {
             //Console.WriteLine("start PostMessageToDiscordAsync: {0}", message);
             //return ""; // for debug
-
-            HttpResponseMessage response = await client.PostAsync(Configs.DiscordCreateMessageApiEndpoint, new FormUrlEncodedContent(new Dictionary<string, string> { { "content", message } }));
+            HttpClient client = new HttpClient();
+            HttpResponseMessage response = await client.PostAsync(Configs.DiscordWebHookUrl, new FormUrlEncodedContent(new Dictionary<string, string> { { "content", message } }));
             string content = await response.Content.ReadAsStringAsync();
             //Console.WriteLine("End PostMessageToDiscordAsync: {0}", content);
             return content;
