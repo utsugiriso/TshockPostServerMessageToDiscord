@@ -71,7 +71,7 @@ namespace TshockPostServerMessageToDiscord
 
             ServerApi.Hooks.ServerJoin.Register(this, OnServerJoin);
             ServerApi.Hooks.ServerLeave.Register(this, OnServerLeave);
-            ServerApi.Hooks.NetGetData.Register(this, OnGetData);
+            //ServerApi.Hooks.NetGetData.Register(this, OnGetData);
             //ServerApi.Hooks.ServerChat.Register(this, OnServerChat);
             TShockAPI.Hooks.PlayerHooks.PlayerChat += OnPlayerChat;
         }
@@ -87,7 +87,7 @@ namespace TshockPostServerMessageToDiscord
             {
                 ServerApi.Hooks.ServerJoin.Deregister(this, OnServerJoin);
                 ServerApi.Hooks.ServerLeave.Deregister(this, OnServerLeave);
-                ServerApi.Hooks.NetGetData.Deregister(this, OnGetData);
+                //ServerApi.Hooks.NetGetData.Deregister(this, OnGetData);
                 //ServerApi.Hooks.ServerChat.Deregister(this, OnServerChat);
                 TShockAPI.Hooks.PlayerHooks.PlayerChat -= OnPlayerChat;
             }
